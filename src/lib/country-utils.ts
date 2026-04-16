@@ -103,9 +103,9 @@ export function filterDisplayedCountries(
 
   return countries.filter((country) => {
     const matchesName =
-      normalizedName.length === 0 ||
-      country.name.common.toLowerCase().includes(normalizedName) ||
-      country.name.official.toLowerCase().includes(normalizedName);
+    normalizedName.length === 0 ||
+    country.name.common.includes(normalizedName) ||
+    country.name.common.toLowerCase().includes(normalizedName)
 
     const matchesLanguage =
       normalizedLanguage.length === 0 ||
