@@ -18,9 +18,9 @@ export function AppHeader({ isDarkMode, onToggleTheme }: AppHeaderProps) {
         <h1 className="geo-title" style={{ fontSize: "clamp(2rem, 5vw, 3.2rem)" }}>
           GeoExplore
         </h1>
-          <p className="text-sm text-muted-foreground">
-            Discover countries using REST Countries API endpoints.
-          </p>
+        <p className="text-sm text-muted-foreground">
+            Browse countries and explore REST Countries API data.
+        </p>
       </div>
 
       <Button variant="outline" onClick={onToggleTheme} className="geo-theme-toggle">
