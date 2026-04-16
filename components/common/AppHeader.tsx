@@ -18,8 +18,8 @@ export function AppHeader({ isDarkMode, onToggleTheme }: AppHeaderProps) {
         <h1 className="geo-title" style={{ fontSize: "clamp(2rem, 5vw, 3.2rem)" }}>
           GeoExplore
         </h1>
-        <p style={{ fontSize: "0.875rem", color: "var(--geo-muted)", marginTop: "4px", fontWeight: 300 }}>
-          Explore countries using REST Countries API endpoints.
+        <p className="text-sm text-muted-foreground">
+            Browse countries and explore REST Countries API data.
         </p>
       </div>
 
