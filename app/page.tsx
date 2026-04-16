@@ -1,19 +1,21 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
-import { SimpleCard } from "@/app/components/SimpleCard";
 import {
   API_BASE,
   ALL_COUNTRIES_FIELDS,
   buildEndpointUrl,
   filterDisplayedCountries,
-  firstCapital,
-  formatNumber,
   sortCountriesByPopulation,
   type Country,
   type EndpointType,
 } from "@/src/lib/country-utils";
+
+import { AppHeader } from "@/components/common/AppHeader";
+import { EndpointSearch } from "@/components/common/Endpointsearch";
+import { QuickFilters } from "@/components/common/Quickfilters";
+import { CountryCard } from "@/components/common/CountryCard";
+import { CountryDialog } from "@/components/common/Countrydialog";
 
 export default function Home() {
   const [countries, setCountries] = useState<Country[]>([]);
@@ -31,16 +33,14 @@ export default function Home() {
   const [independentStatus, setIndependentStatus] = useState(true);
 
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const countriesByCode = useMemo(() => {
     return new Map(countries.map((country) => [country.cca3, country]));
   }, [countries]);
 
   const selectedCountry = useMemo(() => {
-    if (!selectedCountryCode) {
-      return null;
-    }
-
+    if (!selectedCountryCode) return null;
     return countriesByCode.get(selectedCountryCode) ?? null;
   }, [countriesByCode, selectedCountryCode]);
 
@@ -51,16 +51,16 @@ export default function Home() {
     ];
   }, [countries]);
 
-const displayedCountries = useMemo(() => {
-  const filtered = filterDisplayedCountries(
-    countries,
-    nameSearch,
-    languageSearch,
-    regionFilter,
-  );
+  const displayedCountries = useMemo(() => {
+    const filtered = filterDisplayedCountries(
+      countries,
+      nameSearch,
+      languageSearch,
+      regionFilter,
+    );
 
-  return sortCountriesByPopulation(filtered, sortOrder);
-}, [countries, languageSearch, nameSearch, regionFilter, sortOrder]);
+    return sortCountriesByPopulation(filtered, sortOrder);
+  }, [countries, languageSearch, nameSearch, regionFilter, sortOrder]);
 
   useEffect(() => {
     const saved = window.localStorage.getItem("geoexplore-theme");
@@ -117,265 +117,95 @@ const displayedCountries = useMemo(() => {
     window.localStorage.setItem("geoexplore-theme", next ? "dark" : "light");
   };
 
+  const openCountryDialog = (code: string) => {
+    setSelectedCountryCode(code);
+    setIsDialogOpen(true);
+  };
+
   return (
-    <div className="min-h-screen bg-zinc-50 px-4 py-6 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 md:px-8">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6">
-        <header className="flex flex-col gap-4 rounded-2xl border border-black/10 bg-white p-4 dark:border-white/15 dark:bg-zinc-900 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold">GeoExplore</h1>
-            <p className="text-sm text-zinc-600 dark:text-zinc-300">
-              Explore countries using REST Countries API endpoints.
-            </p>
-          </div>
-          <button
-            onClick={toggleTheme}
-            className="rounded-lg border border-black/10 px-4 py-2 text-sm font-medium hover:bg-zinc-100 dark:border-white/20 dark:hover:bg-zinc-800"
-          >
-            {isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-          </button>
-        </header>
+    <>
+      <div className="geo-bg" aria-hidden="true" />
 
-        <SimpleCard title="Endpoint Search">
-          <div className="grid gap-3 md:grid-cols-4">
-            <label className="flex flex-col gap-1 text-sm">
-              Endpoint
-              <select
-                value={endpointType}
-                onChange={(event) => setEndpointType(event.target.value as EndpointType)}
-                className="rounded-lg border border-black/10 bg-white px-3 py-2 dark:border-white/20 dark:bg-zinc-800"
-              >
-                <option value="all">All Countries</option>
-                <option value="name">By Name</option>
-                <option value="full-name">Full Name</option>
-                <option value="code">By Code</option>
-                <option value="codes">List of Codes</option>
-                <option value="currency">By Currency</option>
-                <option value="language">By Language</option>
-                <option value="capital">By Capital</option>
-                <option value="region">By Region</option>
-                <option value="subregion">By Subregion</option>
-                <option value="demonym">By Demonym</option>
-                <option value="translation">By Translation</option>
-                <option value="independent">Independent</option>
-              </select>
-            </label>
+      <div className="min-h-screen text-foreground" style={{ fontFamily: "'DM Sans', sans-serif" }}>
+        <div className="mx-auto flex w-full max-w-7xl flex-col gap-7 px-4 py-8 md:px-8">
+          <AppHeader isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />
 
-            <label className="flex flex-col gap-1 text-sm md:col-span-2">
-              Query
-              <input
-                value={endpointQuery}
-                onChange={(event) => setEndpointQuery(event.target.value)}
-                placeholder="e.g. peru, co, spanish, europe"
-                disabled={endpointType === "all" || endpointType === "independent"}
-                className="rounded-lg border border-black/10 bg-white px-3 py-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-white/20 dark:bg-zinc-800 dark:disabled:bg-zinc-700"
-              />
-            </label>
+          <EndpointSearch
+            endpointType={endpointType}
+            endpointQuery={endpointQuery}
+            independentStatus={independentStatus}
+            onEndpointTypeChange={setEndpointType}
+            onEndpointQueryChange={setEndpointQuery}
+            onIndependentStatusChange={setIndependentStatus}
+            onRunSearch={() => void runEndpointSearch()}
+            onReset={() => void fetchCountries(`${API_BASE}/all?fields=${ALL_COUNTRIES_FIELDS}`)}
+          />
 
-            <label className="flex flex-col gap-1 text-sm">
-              Independent Status
-              <select
-                value={independentStatus ? "true" : "false"}
-                onChange={(event) => setIndependentStatus(event.target.value === "true")}
-                disabled={endpointType !== "independent"}
-                className="rounded-lg border border-black/10 bg-white px-3 py-2 disabled:cursor-not-allowed disabled:bg-zinc-100 dark:border-white/20 dark:bg-zinc-800 dark:disabled:bg-zinc-700"
-              >
-                <option value="true">true</option>
-                <option value="false">false</option>
-              </select>
-            </label>
-          </div>
-          <div className="mt-3 flex items-center gap-3">
-            <button
-              onClick={() => void runEndpointSearch()}
-              className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-            >
-              Run Endpoint
-            </button>
-            <button
-              onClick={() => void fetchCountries(`${API_BASE}/all?fields=${ALL_COUNTRIES_FIELDS}`)}
-              className="rounded-lg border border-black/10 px-4 py-2 text-sm font-medium hover:bg-zinc-100 dark:border-white/20 dark:hover:bg-zinc-800"
-            >
-              Reset to All Countries
-            </button>
-          </div>
-        </SimpleCard>
+          <QuickFilters
+            nameSearch={nameSearch}
+            languageSearch={languageSearch}
+            regionFilter={regionFilter}
+            sortOrder={sortOrder}
+            regionOptions={regionOptions}
+            onNameSearchChange={setNameSearch}
+            onLanguageSearchChange={setLanguageSearch}
+            onRegionFilterChange={setRegionFilter}
+            onSortOrderChange={setSortOrder}
+          />
 
-        <SimpleCard title="Quick Filters">
-          <div className="grid gap-3 md:grid-cols-4">
-            <label className="flex flex-col gap-1 text-sm">
-              Search Country Name
-              <input
-                value={nameSearch}
-                onChange={(event) => setNameSearch(event.target.value)}
-                placeholder="Type a country name"
-                className="rounded-lg border border-black/10 bg-white px-3 py-2 dark:border-white/20 dark:bg-zinc-800"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1 text-sm">
-              Search Language
-              <input
-                value={languageSearch}
-                onChange={(event) => setLanguageSearch(event.target.value)}
-                placeholder="e.g. Spanish"
-                className="rounded-lg border border-black/10 bg-white px-3 py-2 dark:border-white/20 dark:bg-zinc-800"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1 text-sm">
-              Filter by Region
-              <select
-                value={regionFilter}
-                onChange={(event) => setRegionFilter(event.target.value)}
-                className="rounded-lg border border-black/10 bg-white px-3 py-2 dark:border-white/20 dark:bg-zinc-800"
-              >
-                {regionOptions.map((region) => (
-                  <option key={region} value={region}>
-                    {region === "all" ? "All Regions" : region}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className="flex flex-col gap-1 text-sm">
-              Sort by Population
-              <select
-                value={sortOrder}
-                onChange={(event) => setSortOrder(event.target.value)}
-                className="rounded-lg border border-black/10 bg-white px-3 py-2 dark:border-white/20 dark:bg-zinc-800"
-              >
-                <option value="none">No Sorting</option>
-                <option value="population-desc">High to Low</option>
-                <option value="population-asc">Low to High</option>
-              </select>
-            </label>
-          </div>
-        </SimpleCard>
-
-        {isLoading ? (
-          <div className="flex items-center gap-3 rounded-xl border border-black/10 bg-white p-4 dark:border-white/15 dark:bg-zinc-900">
-            <div className="h-5 w-5 animate-spin rounded-full border-2 border-zinc-300 border-t-zinc-800 dark:border-zinc-600 dark:border-t-zinc-200" />
-            <p className="text-sm">Loading country data...</p>
-          </div>
-        ) : null}
-
-        {error ? (
-          <p className="rounded-xl border border-red-300 bg-red-50 p-3 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/40 dark:text-red-300">
-            {error}
-          </p>
-        ) : null}
-
-        <section className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)]">
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {displayedCountries.map((country) => {
-              const selected = selectedCountryCode === country.cca3;
-
-              return (
-                <button
-                  key={country.cca3}
-                  type="button"
-                  onClick={() => setSelectedCountryCode(country.cca3)}
-                  className="text-left"
-                >
-                  <SimpleCard
-                    className={`h-full transition ${selected ? "ring-2 ring-zinc-800 dark:ring-zinc-200" : "hover:shadow-md"}`}
-                    title={country.name.common}
-                  >
-                    {country.flags?.png ? (
-                      <Image
-                        src={country.flags.png}
-                        alt={country.flags.alt ?? `${country.name.common} flag`}
-                        className="mb-3 h-28 w-full rounded-md object-cover"
-                        width={320}
-                        height={180}
-                        unoptimized
-                      />
-                    ) : null}
-                    <p className="text-sm text-zinc-600 dark:text-zinc-300">
-                      Capital: <span className="font-medium">{firstCapital(country)}</span>
-                    </p>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-300">
-                      Population: <span className="font-medium">{formatNumber(country.population)}</span>
-                    </p>
-                    <p className="text-sm text-zinc-600 dark:text-zinc-300">
-                      Area: <span className="font-medium">{formatNumber(country.area)} km2</span>
-                    </p>
-                  </SimpleCard>
-                </button>
-              );
-            })}
-          </div>
-
-          <SimpleCard title={selectedCountry?.name.common ?? "Country Details"}>
-            {selectedCountry ? (
-              <div className="space-y-3">
-                {selectedCountry.flags?.svg ? (
-                  <Image
-                    src={selectedCountry.flags.svg}
-                    alt={selectedCountry.flags.alt ?? `${selectedCountry.name.common} flag`}
-                    className="h-auto w-full rounded-md border border-black/10 dark:border-white/15"
-                    width={640}
-                    height={400}
-                    unoptimized
-                  />
-                ) : null}
-
-                <p className="text-sm">
-                  <span className="font-semibold">Official:</span> {selectedCountry.name.official}
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Capital:</span> {firstCapital(selectedCountry)}
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Population:</span> {formatNumber(selectedCountry.population)}
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Area:</span> {formatNumber(selectedCountry.area)} km2
-                </p>
-                <p className="text-sm">
-                  <span className="font-semibold">Region:</span> {selectedCountry.region ?? "N/A"}
-                </p>
-
-                <div>
-                  <h4 className="mb-2 text-sm font-semibold">Border Countries</h4>
-                  {selectedCountry.borders && selectedCountry.borders.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {selectedCountry.borders.map((borderCode) => {
-                        const borderCountry = countriesByCode.get(borderCode);
-
-                        return (
-                          <button
-                            key={borderCode}
-                            onClick={() => setSelectedCountryCode(borderCode)}
-                            className="rounded-full border border-black/10 px-3 py-1 text-xs font-medium hover:bg-zinc-100 dark:border-white/20 dark:hover:bg-zinc-800"
-                          >
-                            {borderCountry?.name.common ?? borderCode}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-zinc-600 dark:text-zinc-300">No bordering countries.</p>
-                  )}
-                </div>
-
-                <a
-                  href={selectedCountry.maps?.googleMaps ?? "#"}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex rounded-lg bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-300"
-                >
-                  View on Map
-                </a>
-              </div>
-            ) : (
-              <p className="text-sm text-zinc-600 dark:text-zinc-300">
-                Select a country card to view details.
+          {isLoading ? (
+            <div className="geo-panel flex items-center gap-3 p-5">
+              <div className="geo-spinner" />
+              <p style={{ fontSize: "0.875rem", color: "var(--geo-muted)" }}>
+                Loading country data…
               </p>
-            )}
-          </SimpleCard>
-        </section>
+            </div>
+          ) : null}
+
+          {error ? (
+            <div
+              className="geo-error p-5"
+              style={{ display: "flex", alignItems: "center", gap: "10px", borderRadius: "14px" }}
+            >
+              <span style={{ fontSize: "1.1rem" }}>⚠️</span>
+              <p style={{ fontSize: "0.875rem" }}>{error}</p>
+            </div>
+          ) : null}
+
+          {!isLoading && displayedCountries.length > 0 && (
+            <div>
+              <div className="geo-section-bar">
+                <span
+                  className="geo-card-title"
+                  style={{ fontSize: "1.05rem", color: "var(--geo-text)" }}
+                >
+                  Countries
+                </span>
+                <span className="geo-count-badge">{displayedCountries.length}</span>
+              </div>
+
+              <section className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                {displayedCountries.map((country, i) => (
+                  <CountryCard
+                    key={country.cca3}
+                    country={country}
+                    animationIndex={i}
+                    onViewDetails={openCountryDialog}
+                  />
+                ))}
+              </section>
+            </div>
+          )}
+
+          <CountryDialog
+            isOpen={isDialogOpen}
+            selectedCountry={selectedCountry}
+            countriesByCode={countriesByCode}
+            onOpenChange={setIsDialogOpen}
+            onSelectBorderCountry={setSelectedCountryCode}
+          />
+        </div>
       </div>
-    </div>
+    </>
   );
 }
