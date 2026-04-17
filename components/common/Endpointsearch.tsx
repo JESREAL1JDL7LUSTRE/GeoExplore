@@ -33,6 +33,47 @@ export function EndpointSearch({
   onRunSearch,
   onReset,
 }: EndpointSearchProps) {
+  const trimmedQuery = endpointQuery.trim();
+  const requiresQuery = endpointType !== "all" && endpointType !== "independent";
+
+  const validationError = (() => {
+    if (!requiresQuery) return "";
+
+    if (trimmedQuery.length === 0) {
+      return "Query is required for this endpoint.";
+    }
+
+    switch (endpointType) {
+      case "code": {
+        return /^[a-z]{2,3}$/i.test(trimmedQuery)
+          ? ""
+          : "Code must be 2 to 3 letters (e.g. us, usa).";
+      }
+      case "codes": {
+        return /^([a-z]{2,3})(\s*,\s*[a-z]{2,3})*$/i.test(trimmedQuery)
+          ? ""
+          : "Use comma-separated 2 to 3 letter codes (e.g. us, pe, jpn).";
+      }
+      case "currency": {
+        return /^[a-z]{3}$/i.test(trimmedQuery)
+          ? ""
+          : "Currency must be a 3-letter code (e.g. USD).";
+      }
+      case "language": {
+        return /^[a-z]{2,3}$/i.test(trimmedQuery)
+          ? ""
+          : "Language must be a 2 to 3 letter code (e.g. en, spa).";
+      }
+      default: {
+        return /^[a-z\s'.-]+$/i.test(trimmedQuery)
+          ? ""
+          : "Only letters, spaces, apostrophes, periods, and hyphens are allowed.";
+      }
+    }
+  })();
+
+  const isRunDisabled = Boolean(validationError);
+
   return (
     <Card className="geo-panel border-0 shadow-none rounded-2xl">
       <CardHeader className="pb-2 pt-6 px-7">
@@ -81,7 +122,13 @@ export function EndpointSearch({
               placeholder="e.g. peru, co, spanish, europe"
               disabled={endpointType === "all" || endpointType === "independent"}
               className="geo-input"
+              aria-invalid={Boolean(validationError)}
             />
+            {validationError ? (
+              <p className="geo-label" style={{ color: "var(--destructive)" }}>
+                {validationError}
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-2">
@@ -103,7 +150,7 @@ export function EndpointSearch({
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <Button className="geo-btn-primary" onClick={onRunSearch}>
+          <Button className="geo-btn-primary" onClick={onRunSearch} disabled={isRunDisabled}>
             Run Endpoint
           </Button>
           <Button variant="outline" className="geo-btn-outline" onClick={onReset}>

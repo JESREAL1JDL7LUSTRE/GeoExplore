@@ -33,6 +33,12 @@ export function QuickFilters({
   onRegionFilterChange,
   onSortOrderChange,
 }: QuickFiltersProps) {
+  const textPattern = /^[a-z\s'.-]*$/i;
+  const nameIsValid = textPattern.test(nameSearch);
+  const languageIsValid = textPattern.test(languageSearch);
+
+  const normalizeValue = (value: string) => value.replace(/\s{2,}/g, " ").slice(0, 60);
+
   return (
     <Card className="geo-panel border-0 shadow-none rounded-2xl">
       <CardHeader className="pb-2 pt-6 px-7">
@@ -50,20 +56,44 @@ export function QuickFilters({
             <label className="geo-label">Country Name</label>
             <Input
               value={nameSearch}
-              onChange={(event) => onNameSearchChange(event.target.value)}
+              onChange={(event) => {
+                const nextValue = normalizeValue(event.target.value);
+                if (textPattern.test(nextValue)) {
+                  onNameSearchChange(nextValue);
+                }
+              }}
               placeholder="Type a country name"
               className="geo-input"
+              maxLength={60}
+              aria-invalid={!nameIsValid}
             />
+            {!nameIsValid ? (
+              <p className="geo-label" style={{ color: "var(--destructive)" }}>
+                Use letters, spaces, apostrophes, periods, and hyphens only.
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-2">
             <label className="geo-label">Language</label>
             <Input
               value={languageSearch}
-              onChange={(event) => onLanguageSearchChange(event.target.value)}
+              onChange={(event) => {
+                const nextValue = normalizeValue(event.target.value);
+                if (textPattern.test(nextValue)) {
+                  onLanguageSearchChange(nextValue);
+                }
+              }}
               placeholder="e.g. Spanish"
               className="geo-input"
+              maxLength={60}
+              aria-invalid={!languageIsValid}
             />
+            {!languageIsValid ? (
+              <p className="geo-label" style={{ color: "var(--destructive)" }}>
+                Use letters, spaces, apostrophes, periods, and hyphens only.
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-2">
