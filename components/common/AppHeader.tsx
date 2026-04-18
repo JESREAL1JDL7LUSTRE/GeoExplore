@@ -4,10 +4,19 @@ import { Button } from "@/components/ui/button";
 
 interface AppHeaderProps {
   isDarkMode: boolean;
+  isAuthenticated: boolean;
   onToggleTheme: () => void;
+  onLoginClick: () => void;
+  onLogout: () => void;
 }
 
-export function AppHeader({ isDarkMode, onToggleTheme }: AppHeaderProps) {
+export function AppHeader({
+  isDarkMode,
+  isAuthenticated,
+  onToggleTheme,
+  onLoginClick,
+  onLogout,
+}: AppHeaderProps) {
   return (
     <header className="geo-panel flex flex-col gap-5 p-7 md:flex-row md:items-center md:justify-between">
       <div className="flex flex-col gap-1">
@@ -23,9 +32,19 @@ export function AppHeader({ isDarkMode, onToggleTheme }: AppHeaderProps) {
         </p>
       </div>
 
-      <Button variant="outline" onClick={onToggleTheme} className="geo-theme-toggle">
-        {isDarkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
-      </Button>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button variant="outline" onClick={onToggleTheme} className="geo-theme-toggle">
+          {isDarkMode ? "☀️ Light Mode" : "🌙 Dark Mode"}
+        </Button>
+
+        {isAuthenticated ? (
+          <Button variant="outline" onClick={onLogout}>
+            Log out
+          </Button>
+        ) : (
+          <Button onClick={onLoginClick}>Log in</Button>
+        )}
+      </div>
     </header>
   );
 }

@@ -16,6 +16,15 @@ import { EndpointSearch } from "@/components/common/Endpointsearch";
 import { QuickFilters } from "@/components/common/Quickfilters";
 import { CountryCard } from "@/components/common/CountryCard";
 import { CountryDialog } from "@/components/common/Countrydialog";
+import { LoginForm } from "@/components/login-form";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { isAuthenticated, logout } from "@/src/lib/auth";
 
 export default function Home() {
   const [countries, setCountries] = useState<Country[]>([]);
@@ -34,6 +43,8 @@ export default function Home() {
 
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false);
+  const [isUserAuthenticated, setIsUserAuthenticated] = useState(false);
 
   const countriesByCode = useMemo(() => {
     return new Map(countries.map((country) => [country.cca3, country]));
@@ -67,7 +78,27 @@ export default function Home() {
     const nextMode = saved === "dark";
     setIsDarkMode(nextMode);
     document.documentElement.classList.toggle("dark", nextMode);
+
+    const currentAuth = isAuthenticated();
+    setIsUserAuthenticated(currentAuth);
+
+    if (!currentAuth) {
+      setIsLoginDialogOpen(true);
+    }
   }, []);
+
+  const requireAuth = () => {
+    const authState = isAuthenticated();
+
+    if (!authState) {
+      setIsUserAuthenticated(false);
+      setIsLoginDialogOpen(true);
+      setError("Please log in to access GeoExplore features.");
+      return false;
+    }
+
+    return true;
+  };
 
   const fetchCountries = async (url: string) => {
     setIsLoading(true);
@@ -95,10 +126,18 @@ export default function Home() {
   };
 
   useEffect(() => {
+    if (!isUserAuthenticated) {
+      setCountries([]);
+      setSelectedCountryCode(null);
+      return;
+    }
+
     void fetchCountries(`${API_BASE}/all?fields=${ALL_COUNTRIES_FIELDS}`);
-  }, []);
+  }, [isUserAuthenticated]);
 
   const runEndpointSearch = async () => {
+    if (!requireAuth()) return;
+
     const requiresQuery = endpointType !== "all" && endpointType !== "independent";
 
     if (requiresQuery && endpointQuery.trim().length === 0) {
@@ -118,8 +157,22 @@ export default function Home() {
   };
 
   const openCountryDialog = (code: string) => {
+    if (!requireAuth()) return;
+
     setSelectedCountryCode(code);
     setIsDialogOpen(true);
+  };
+
+  const handleLogout = () => {
+    logout();
+    setIsUserAuthenticated(false);
+    setIsLoginDialogOpen(true);
+  };
+
+  const handleLoginSuccess = () => {
+    setIsUserAuthenticated(true);
+    setError(null);
+    setIsLoginDialogOpen(false);
   };
 
   return (
@@ -128,7 +181,13 @@ export default function Home() {
 
       <div className="min-h-screen text-foreground" style={{ fontFamily: "'DM Sans', sans-serif" }}>
         <div className="mx-auto flex w-full max-w-7xl flex-col gap-7 px-4 py-8 md:px-8">
-          <AppHeader isDarkMode={isDarkMode} onToggleTheme={toggleTheme} />
+          <AppHeader
+            isDarkMode={isDarkMode}
+            isAuthenticated={isUserAuthenticated}
+            onToggleTheme={toggleTheme}
+            onLoginClick={() => setIsLoginDialogOpen(true)}
+            onLogout={handleLogout}
+          />
 
           <EndpointSearch
             endpointType={endpointType}
@@ -138,7 +197,10 @@ export default function Home() {
             onEndpointQueryChange={setEndpointQuery}
             onIndependentStatusChange={setIndependentStatus}
             onRunSearch={() => void runEndpointSearch()}
-            onReset={() => void fetchCountries(`${API_BASE}/all?fields=${ALL_COUNTRIES_FIELDS}`)}
+            onReset={() => {
+              if (!requireAuth()) return;
+              void fetchCountries(`${API_BASE}/all?fields=${ALL_COUNTRIES_FIELDS}`);
+            }}
           />
 
           <QuickFilters
@@ -204,6 +266,18 @@ export default function Home() {
             onOpenChange={setIsDialogOpen}
             onSelectBorderCountry={setSelectedCountryCode}
           />
+
+          <Dialog open={isLoginDialogOpen} onOpenChange={setIsLoginDialogOpen}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>Sign in to continue</DialogTitle>
+                <DialogDescription>
+                  Enter your token to access search, filters, and country details.
+                </DialogDescription>
+              </DialogHeader>
+              <LoginForm onSuccess={handleLoginSuccess} />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </>
