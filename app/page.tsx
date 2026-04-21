@@ -63,6 +63,10 @@ export default function Home() {
   }, [countries]);
 
   const displayedCountries = useMemo(() => {
+    if (!isUserAuthenticated) {
+      return countries;
+    }
+
     const filtered = filterDisplayedCountries(
       countries,
       nameSearch,
@@ -81,10 +85,6 @@ export default function Home() {
 
     const currentAuth = isAuthenticated();
     setIsUserAuthenticated(currentAuth);
-
-    if (!currentAuth) {
-      setIsLoginDialogOpen(true);
-    }
   }, []);
 
   const requireAuth = () => {
@@ -126,14 +126,8 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (!isUserAuthenticated) {
-      setCountries([]);
-      setSelectedCountryCode(null);
-      return;
-    }
-
     void fetchCountries(`${API_BASE}/all?fields=${ALL_COUNTRIES_FIELDS}`);
-  }, [isUserAuthenticated]);
+  }, []);
 
   const runEndpointSearch = async () => {
     if (!requireAuth()) return;
@@ -166,7 +160,16 @@ export default function Home() {
   const handleLogout = () => {
     logout();
     setIsUserAuthenticated(false);
+    setNameSearch("");
+    setLanguageSearch("");
+    setRegionFilter("all");
+    setSortOrder("none");
+    setEndpointType("all");
+    setEndpointQuery("");
+    setIndependentStatus(true);
+    setSelectedCountryCode(null);
     setIsLoginDialogOpen(true);
+    void fetchCountries(`${API_BASE}/all?fields=${ALL_COUNTRIES_FIELDS}`);
   };
 
   const handleLoginSuccess = () => {
@@ -193,6 +196,7 @@ export default function Home() {
             endpointType={endpointType}
             endpointQuery={endpointQuery}
             independentStatus={independentStatus}
+            disabled={!isUserAuthenticated}
             onEndpointTypeChange={setEndpointType}
             onEndpointQueryChange={setEndpointQuery}
             onIndependentStatusChange={setIndependentStatus}
@@ -209,6 +213,7 @@ export default function Home() {
             regionFilter={regionFilter}
             sortOrder={sortOrder}
             regionOptions={regionOptions}
+            disabled={!isUserAuthenticated}
             onNameSearchChange={setNameSearch}
             onLanguageSearchChange={setLanguageSearch}
             onRegionFilterChange={setRegionFilter}

@@ -16,6 +16,7 @@ interface EndpointSearchProps {
   endpointType: EndpointType;
   endpointQuery: string;
   independentStatus: boolean;
+  disabled?: boolean;
   onEndpointTypeChange: (value: EndpointType) => void;
   onEndpointQueryChange: (value: string) => void;
   onIndependentStatusChange: (value: boolean) => void;
@@ -27,6 +28,7 @@ export function EndpointSearch({
   endpointType,
   endpointQuery,
   independentStatus,
+  disabled = false,
   onEndpointTypeChange,
   onEndpointQueryChange,
   onIndependentStatusChange,
@@ -92,6 +94,7 @@ export function EndpointSearch({
             <Select
               value={endpointType}
               onValueChange={(value) => onEndpointTypeChange(value as EndpointType)}
+              disabled={disabled}
             >
               <SelectTrigger className="geo-input">
                 <SelectValue placeholder="Select endpoint" />
@@ -120,7 +123,7 @@ export function EndpointSearch({
               value={endpointQuery}
               onChange={(event) => onEndpointQueryChange(event.target.value)}
               placeholder="e.g. peru, co, spanish, europe"
-              disabled={endpointType === "all" || endpointType === "independent"}
+              disabled={disabled || endpointType === "all" || endpointType === "independent"}
               className="geo-input"
               aria-invalid={Boolean(validationError)}
             />
@@ -136,7 +139,7 @@ export function EndpointSearch({
             <Select
               value={independentStatus ? "true" : "false"}
               onValueChange={(value) => onIndependentStatusChange(value === "true")}
-              disabled={endpointType !== "independent"}
+              disabled={disabled || endpointType !== "independent"}
             >
               <SelectTrigger className="geo-input">
                 <SelectValue placeholder="Select status" />
@@ -150,10 +153,14 @@ export function EndpointSearch({
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <Button className="geo-btn-primary" onClick={onRunSearch} disabled={isRunDisabled}>
+          <Button
+            className="geo-btn-primary"
+            onClick={onRunSearch}
+            disabled={disabled || isRunDisabled}
+          >
             Run Endpoint
           </Button>
-          <Button variant="outline" className="geo-btn-outline" onClick={onReset}>
+          <Button variant="outline" className="geo-btn-outline" onClick={onReset} disabled={disabled}>
             Reset to All Countries
           </Button>
         </div>
