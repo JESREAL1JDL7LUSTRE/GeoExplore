@@ -16,6 +16,7 @@ interface QuickFiltersProps {
   regionFilter: string;
   sortOrder: string;
   regionOptions: string[];
+  disabled?: boolean;
   onNameSearchChange: (value: string) => void;
   onLanguageSearchChange: (value: string) => void;
   onRegionFilterChange: (value: string) => void;
@@ -28,6 +29,7 @@ export function QuickFilters({
   regionFilter,
   sortOrder,
   regionOptions,
+  disabled = false,
   onNameSearchChange,
   onLanguageSearchChange,
   onRegionFilterChange,
@@ -66,6 +68,7 @@ export function QuickFilters({
               className="geo-input"
               maxLength={60}
               aria-invalid={!nameIsValid}
+              disabled={disabled}
             />
             {!nameIsValid ? (
               <p className="geo-label" style={{ color: "var(--destructive)" }}>
@@ -88,6 +91,7 @@ export function QuickFilters({
               className="geo-input"
               maxLength={60}
               aria-invalid={!languageIsValid}
+              disabled={disabled}
             />
             {!languageIsValid ? (
               <p className="geo-label" style={{ color: "var(--destructive)" }}>
@@ -98,7 +102,7 @@ export function QuickFilters({
 
           <div className="space-y-2">
             <label className="geo-label">Region</label>
-            <Select value={regionFilter} onValueChange={onRegionFilterChange}>
+            <Select value={regionFilter} onValueChange={onRegionFilterChange} disabled={disabled}>
               <SelectTrigger className="geo-input">
                 <SelectValue placeholder="Choose region" />
               </SelectTrigger>
@@ -114,7 +118,7 @@ export function QuickFilters({
 
           <div className="space-y-2">
             <label className="geo-label">Population Sort</label>
-            <Select value={sortOrder} onValueChange={onSortOrderChange}>
+            <Select value={sortOrder} onValueChange={onSortOrderChange} disabled={disabled}>
               <SelectTrigger className="geo-input">
                 <SelectValue placeholder="Choose sort order" />
               </SelectTrigger>
