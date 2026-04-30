@@ -25,6 +25,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { isAuthenticated, logout } from "@/src/lib/auth";
+import { logger } from "@/src/lib/logger";
 
 export default function Home() {
   const [countries, setCountries] = useState<Country[]>([]);
@@ -101,29 +102,58 @@ export default function Home() {
   };
 
   const fetchCountries = async (url: string) => {
-    setIsLoading(true);
-    setError(null);
+  logger.info("Request started", { url });
 
-    try {
-      const response = await fetch(url);
+  setIsLoading(true);
+  setError(null);
 
-      if (!response.ok) {
-        throw new Error("No countries found for this query.");
-      }
+  try {
+    const startTime = performance.now();
 
-      const payload = (await response.json()) as Country | Country[];
-      const result = Array.isArray(payload) ? payload : [payload];
+    const response = await fetch(url);
 
-      setCountries(result);
-      setSelectedCountryCode(result[0]?.cca3 ?? null);
-    } catch {
-      setCountries([]);
-      setSelectedCountryCode(null);
-      setError("No country data found. Try another search.");
-    } finally {
-      setIsLoading(false);
+    if (!response.ok) {
+      logger.warn("API responded with non-OK status", {
+        status: response.status,
+        url,
+      });
+      throw new Error("No countries found for this query.");
     }
-  };
+
+    const payload = (await response.json()) as Country | Country[];
+    const result = Array.isArray(payload) ? payload : [payload];
+
+    const endTime = performance.now();
+
+    logger.info("Request successful", {
+      count: result.length,
+      duration: `${(endTime - startTime).toFixed(2)}ms`,
+    });
+
+    setCountries(result);
+    setSelectedCountryCode(result[0]?.cca3 ?? null);
+  } catch (err) {
+    logger.error("Request failed", err);
+
+    setCountries([]);
+    setSelectedCountryCode(null);
+    setError("No country data found. Try another search.");
+  } finally {
+    setIsLoading(false);
+  }
+};
+
+  useEffect(() => {
+  logger.info("GeoExplore app started (uptime check)");
+
+  const saved = window.localStorage.getItem("geoexplore-theme");
+  const nextMode = saved === "dark";
+  setIsDarkMode(nextMode);
+  document.documentElement.classList.toggle("dark", nextMode);
+
+  const currentAuth = isAuthenticated();
+  setIsUserAuthenticated(currentAuth);
+}, []);
 
   useEffect(() => {
     void fetchCountries(`${API_BASE}/all?fields=${ALL_COUNTRIES_FIELDS}`);
@@ -156,6 +186,7 @@ export default function Home() {
     setSelectedCountryCode(code);
     setIsDialogOpen(true);
   };
+
 
   const handleLogout = () => {
     logout();
